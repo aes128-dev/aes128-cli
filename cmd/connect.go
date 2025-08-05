@@ -116,8 +116,46 @@ var connectCmd = &cobra.Command{
 			fmt.Printf("Warning: could not save connection status: %v\n", err)
 		}
 
+		go startSessionWatcher()
+
 		fmt.Println("\nConnection successful!")
 	},
+}
+
+func startSessionWatcher() {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		fmt.Println("\n[Session Watcher] Checking session validity...")
+
+		token, err := config.ReadToken()
+		if err != nil {
+			fmt.Println("[Session Watcher] No session token found. Stopping watcher.")
+			return
+		}
+
+		client := api.NewClient(token)
+		_, err = client.GetLocations()
+
+		if err != nil {
+			fmt.Println("\n[Session Watcher] Session appears to be invalid or expired. Logging out...")
+			fmt.Println("[Session Watcher] Disconnecting VPN...")
+
+			if stopErr := vpn.Stop(); stopErr != nil {
+				fmt.Printf("[Session Watcher] Failed to stop VPN cleanly: %v\n", stopErr)
+			} else {
+				fmt.Println("[Session Watcher] VPN disconnected.")
+			}
+
+			config.ClearSessionData()
+			fmt.Println("[Session Watcher] Local session data has been cleared.")
+			fmt.Println("[Session Watcher] Please log in again.")
+			return
+		} else {
+			fmt.Println("[Session Watcher] Session is valid.")
+		}
+	}
 }
 
 func downloadAndInstallCore() error {
@@ -157,12 +195,12 @@ func downloadAndInstallCore() error {
 	defer gzr.Close()
 
 	tarReader := tar.NewReader(gzr)
-	
+
 	installDir := "/usr/lib/aes128-cli"
 	if err := os.MkdirAll(installDir, 0755); err != nil {
 		return fmt.Errorf("failed to create install directory: %w", err)
 	}
-	
+
 	found := false
 	for {
 		header, err := tarReader.Next()
@@ -172,7 +210,7 @@ func downloadAndInstallCore() error {
 		if err != nil {
 			return fmt.Errorf("failed to read from tar archive: %w", err)
 		}
-		
+
 		if strings.HasSuffix(header.Name, "sing-box") && header.Typeflag == tar.TypeReg {
 			outFile, err := os.OpenFile(vpn.CorePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 			if err != nil {

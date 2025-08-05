@@ -43,6 +43,7 @@ func setupCommands() {
 		rootCmd.AddCommand(statusCmd)
 		rootCmd.AddCommand(locationsCmd)
 		rootCmd.AddCommand(settingsCmd)
+		rootCmd.AddCommand(accountCmd)
 		rootCmd.AddCommand(logoutCmd)
 
 		connectCmd.GroupID = "core"
@@ -51,6 +52,7 @@ func setupCommands() {
 
 		locationsCmd.GroupID = "management"
 		settingsCmd.GroupID = "management"
+		accountCmd.GroupID = "management"
 		logoutCmd.GroupID = "management"
 	}
 }

@@ -32,8 +32,10 @@ type ConnectionStatus struct {
 }
 
 type UserCache struct {
-	UserUUID  string            `json:"user_uuid"`
-	Locations []api.LocationInfo `json:"locations"`
+	UserUUID    string           `json:"user_uuid"`
+	Username    string           `json:"username"`
+	SessionName string           `json:"session_name"`
+	Locations   []api.LocationInfo `json:"locations"`
 }
 
 func getHomeDir() (string, error) {

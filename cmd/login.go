@@ -59,7 +59,7 @@ func attemptLogin(username, password string) {
 		return
 	}
 
-	saveTokenAndFetchData(result)
+	saveTokenAndFetchData(username, result)
 }
 
 func handleSessionLimit(username, password string, sessions []api.AppSessionInfo) {
@@ -99,7 +99,7 @@ func handleSessionLimit(username, password string, sessions []api.AppSessionInfo
 	attemptLogin(username, password)
 }
 
-func saveTokenAndFetchData(result *api.ApiResponse) {
+func saveTokenAndFetchData(username string, result *api.ApiResponse) {
 	if result.AppSessionToken == "" {
 		fmt.Println("Failed to get token from server.")
 		return
@@ -118,8 +118,10 @@ func saveTokenAndFetchData(result *api.ApiResponse) {
 	}
 
 	cache := &config.UserCache{
-		UserUUID:  locationsResponse.UserUUID,
-		Locations: locationsResponse.Locations,
+		UserUUID:    locationsResponse.UserUUID,
+		Username:    username,
+		SessionName: result.SessionName,
+		Locations:   locationsResponse.Locations,
 	}
 
 	if err := config.SaveUserCache(cache); err != nil {
