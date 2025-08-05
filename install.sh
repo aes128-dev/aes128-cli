@@ -13,55 +13,24 @@ main() {
         exit 1
     fi
     
-    check_dependencies
-    
     if [ -f "$INSTALL_PATH" ]; then
-        echo "--> Existing aes128-cli installation found. Updating..."
+        echo "--> Existing aes128-cli installation found. Attempting to update..."
         update_app
     else
-        echo "--> No existing installation found. Starting new installation..."
+        echo "--> No existing aes128-cli installation found. Starting new installation..."
         install_app
     fi
 }
 
-check_dependencies() {
-    echo "--> Checking for required tools..."
-    local missing_tools=0
-    
-    if ! command -v curl >/dev/null 2>&1; then
-        echo "Error: 'curl' is not installed." >&2
-        missing_tools=1
-    fi
-    if ! command -v tar >/dev/null 2>&1; then
-        echo "Error: 'tar' is not installed." >&2
-        missing_tools=1
-    fi
+install_app() {
+    check_dependencies
     
     OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-    if [ "$OS" = "linux" ] && ! command -v setcap >/dev/null 2>&1; then
-        echo "Error: 'setcap' is not installed." >&2
-        missing_tools=1
-    fi
-    
-    if [ "$missing_tools" -eq 1 ]; then
-        echo ""
-        echo "Please install the missing tools and run this script again."
-        if [ -f /etc/debian_version ]; then
-            echo "On Debian/Ubuntu, run: sudo apt update && sudo apt install curl libcap2-bin"
-        elif [ -f /etc/redhat-release ]; then
-            echo "On Fedora/CentOS, run: sudo dnf install curl libcap"
-        elif [ -f /etc/arch-release ]; then
-            echo "On Arch Linux, run: sudo pacman -S curl libcap"
-        fi
-        exit 1
-    fi
-}
-
-install_app() {
     ARCH=$(uname -m)
+    
     echo "--> Detected OS: $OS"
     echo "--> Detected Arch: $ARCH"
-    
+
     case $ARCH in
         x86_64) ARCH="amd64" ;;
         aarch64) ARCH="arm64" ;;
@@ -84,7 +53,16 @@ install_app() {
 }
 
 update_app() {
+    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
     ARCH=$(uname -m)
+    
+    case $ARCH in
+        x86_64) ARCH="amd64" ;;
+        aarch64) ARCH="arm64" ;;
+        armv7l) ARCH="armv7" ;;
+        i386 | i686) ARCH="386" ;;
+    esac
+    
     install_binaries "$OS" "$ARCH"
 
     if [ "$OS" = "linux" ] && systemctl is-active --quiet aes128-cli; then
@@ -94,6 +72,39 @@ update_app() {
 
     echo ""
     echo "--> aes128-cli has been successfully updated!"
+}
+
+check_dependencies() {
+    echo "--> Checking for required tools..."
+    local missing_tools=0
+    
+    if ! command -v curl >/dev/null 2>&1; then
+        echo "Error: 'curl' is not installed." >&2
+        missing_tools=1
+    fi
+    if ! command -v tar >/dev/null 2>&1; then
+        echo "Error: 'tar' is not installed." >&2
+        missing_tools=1
+    fi
+    
+    OS_CHECK=$(uname -s | tr '[:upper:]' '[:lower:]')
+    if [ "$OS_CHECK" = "linux" ] && ! command -v setcap >/dev/null 2>&1; then
+        echo "Error: 'setcap' is not installed." >&2
+        missing_tools=1
+    fi
+    
+    if [ "$missing_tools" -eq 1 ]; then
+        echo ""
+        echo "Please install the missing tools and run this script again."
+        if [ -f /etc/debian_version ]; then
+            echo "On Debian/Ubuntu, run: sudo apt update && sudo apt install curl libcap2-bin"
+        elif [ -f /etc/redhat-release ]; then
+            echo "On Fedora/CentOS, run: sudo dnf install curl libcap"
+        elif [ -f /etc/arch-release ]; then
+            echo "On Arch Linux, run: sudo pacman -S curl libcap"
+        fi
+        exit 1
+    fi
 }
 
 install_binaries() {
@@ -106,7 +117,7 @@ install_binaries() {
     SINGBOX_URL="https://github.com/SagerNet/sing-box/releases/download/v$SINGBOX_VERSION/sing-box-$SINGBOX_VERSION-$OS-$ARCH.tar.gz"
 
     echo "--> Downloading latest aes128-cli..."
-    curl -sSL "$CLI_URL" -o "$INSTALL_PATH"
+    curl -fSL "$CLI_URL" -o "$INSTALL_PATH"
     chmod +x "$INSTALL_PATH"
     
     if [ "$OS" = "linux" ]; then
@@ -117,8 +128,18 @@ install_binaries() {
     mkdir -p "$CORE_INSTALL_DIR"
     
     echo "--> Downloading sing-box core..."
-    curl -sSL "$SINGBOX_URL" | tar -xz -C "$CORE_INSTALL_DIR"
+    TEMP_ARCHIVE=$(mktemp)
+    curl -fSL "$SINGBOX_URL" -o "$TEMP_ARCHIVE"
     
+    if ! file "$TEMP_ARCHIVE" | grep -q 'gzip compressed data'; then
+        echo "Error: Downloaded file for sing-box is not a valid gzip archive." >&2
+        echo "Please check the URL or your network connection." >&2
+        exit 1
+    fi
+    
+    tar -xzf "$TEMP_ARCHIVE" -C "$CORE_INSTALL_DIR"
+    rm "$TEMP_ARCHIVE"
+
     find "$CORE_INSTALL_DIR" -name "sing-box" -type f -exec mv {} "$CORE_INSTALL_DIR/core" \;
     chmod +x "$CORE_INSTALL_DIR/core"
     
