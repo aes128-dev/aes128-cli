@@ -2,7 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/aes128-dev/aes128-cli)](https://goreportcard.com/report/github.com/aes128-dev/aes128-cli)
 
-A command-line interface (CLI) for the AES128 VPN service. Allows you to manage your VPN connection directly from the terminal.
+A command-line interface (CLI) for the [AES128 VPN](https://aes128.com/en/) service. Allows you to manage your VPN connection directly from the terminal.
 
 ## Features
 
@@ -12,13 +12,14 @@ A command-line interface (CLI) for the AES128 VPN service. Allows you to manage 
 -   View connection status, including location and uptime.
 -   Display a list of available locations with their ping latency.
 -   Customize connection protocol (`vless`, `vmess`, `trojan`) and AdBlock settings.
+-   Automatic session validation and disconnect on invalid token.
 
 ## Installation
 
 Prerequisites: `curl` and `tar`. Run the following command in your terminal:
 
 ```bash
-curl -sSL [https://raw.githubusercontent.com/aes128-dev/aes128-cli/main/install.sh](https://raw.githubusercontent.com/aes128-dev/aes128-cli/main/install.sh) | sudo bash
+curl -sSL https://raw.githubusercontent.com/aes128-dev/aes128-cli/main/install.sh | sudo bash
 ```
 
 The script will automatically install `aes128-cli` and the required `sing-box` core.
@@ -122,14 +123,14 @@ $ aes128-cli logout
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 ---
 
 ## Русская версия
 
-Командная утилита (CLI) для сервиса AES128 VPN. Позволяет управлять VPN-соединением напрямую из терминала.
+Командная утилита (CLI) для сервиса [AES128 VPN](https://aes128.com/ru/). Позволяет управлять VPN-соединением напрямую из терминала.
 
 ### Возможности
 
@@ -139,6 +140,7 @@ MIT
 -   Просмотр статуса соединения, включая локацию и время работы (uptime).
 -   Отображение списка доступных локаций с пингом.
 -   Настройка протокола (`vless`, `vmess`, `trojan`) и блокировки рекламы.
+-   Автоматическая проверка сессии и отключение при невалидности токена.
 
 ### Установка
 
@@ -237,7 +239,7 @@ $ aes128-cli logout
 
 1.  Клонируйте репозиторий:
     ```bash
-    git clone [https://github.com/aes128-dev/aes128-cli.git](https://github.com/aes128-dev/aes128-cli.git)
+    git clone https://github.com/aes128-dev/aes128-cli.git
     cd aes128-cli
     ```
 
@@ -249,4 +251,4 @@ $ aes128-cli logout
 
 ### Лицензия
 
-MIT
+Этот проект распространяется под лицензией MIT - подробности смотрите в файле [LICENSE](LICENSE).
