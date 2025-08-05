@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aes128-dev/aes128-cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -14,39 +15,42 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
+	setupCommands()
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
-func init() {
+func setupCommands() {
 	cobra.EnableCommandSorting = false
 
-	rootCmd.AddGroup(&cobra.Group{
-		ID:    "core",
-		Title: "Core Commands:",
-	})
-	rootCmd.AddGroup(&cobra.Group{
-		ID:    "management",
-		Title: "Management Commands:",
-	})
+	_, err := config.ReadToken()
+	if err != nil {
+		rootCmd.AddCommand(loginCmd)
+	} else {
+		rootCmd.AddGroup(&cobra.Group{
+			ID:    "core",
+			Title: "Core Commands:",
+		})
+		rootCmd.AddGroup(&cobra.Group{
+			ID:    "management",
+			Title: "Management Commands:",
+		})
 
-	rootCmd.AddCommand(connectCmd)
-	rootCmd.AddCommand(disconnectCmd)
-	rootCmd.AddCommand(statusCmd)
+		rootCmd.AddCommand(connectCmd)
+		rootCmd.AddCommand(disconnectCmd)
+		rootCmd.AddCommand(statusCmd)
+		rootCmd.AddCommand(locationsCmd)
+		rootCmd.AddCommand(settingsCmd)
+		rootCmd.AddCommand(logoutCmd)
 
-	rootCmd.AddCommand(loginCmd)
-	rootCmd.AddCommand(logoutCmd)
-	rootCmd.AddCommand(locationsCmd)
-	rootCmd.AddCommand(settingsCmd)
+		connectCmd.GroupID = "core"
+		disconnectCmd.GroupID = "core"
+		statusCmd.GroupID = "core"
 
-	connectCmd.GroupID = "core"
-	disconnectCmd.GroupID = "core"
-	statusCmd.GroupID = "core"
-
-	loginCmd.GroupID = "management"
-	logoutCmd.GroupID = "management"
-	locationsCmd.GroupID = "management"
-	settingsCmd.GroupID = "management"
+		locationsCmd.GroupID = "management"
+		settingsCmd.GroupID = "management"
+		logoutCmd.GroupID = "management"
+	}
 }

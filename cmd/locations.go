@@ -14,10 +14,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	rootCmd.AddCommand(locationsCmd)
-}
-
 var locationsCmd = &cobra.Command{
 	Use:   "locations",
 	Short: "Show available VPN locations and their ping",
@@ -28,7 +24,7 @@ var locationsCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println("Fetching locations...")
+		fmt.Println("Fetching locations and checking ping...")
 
 		client := api.NewClient(token)
 		locationsResponse, err := client.GetLocations()
@@ -42,43 +38,18 @@ var locationsCmd = &cobra.Command{
 			return
 		}
 
-		isSudo := os.Geteuid() == 0
-
-		if !isSudo {
-			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"ID", "Location", "Domain"})
-			table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.SetBorder(false)
-			table.SetHeaderLine(false)
-			table.SetColumnSeparator("   ")
-			table.SetCenterSeparator("")
-			table.SetRowSeparator("")
-
-			table.Append([]string{})
-
-			for i, loc := range locationsResponse.Locations {
-				table.Append([]string{strconv.Itoa(i + 1), loc.Name, loc.Domain})
-			}
-			table.Render()
-			fmt.Println("\nNote: To check server ping, run this command with sudo:")
-			fmt.Println("sudo ./aes128-cli locations")
-			return
-		}
-		
-		fmt.Println("Checking ping (requires sudo)...")
-
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetHeader([]string{"ID", "Location", "Domain", "Ping (ms)"})
+		
 		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
 		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		table.SetBorder(false)
+		table.SetBorder(false) 
 		table.SetHeaderLine(false)
 		table.SetRowLine(false)
-		table.SetColumnSeparator("   ")
+		table.SetColumnSeparator("   ") 
 		table.SetCenterSeparator("")
 		table.SetRowSeparator("")
-
+		
 		type pingResult struct {
 			ID   int
 			Data []string
@@ -97,7 +68,7 @@ var locationsCmd = &cobra.Command{
 
 				ping, err := vpn.GetPing(location.IPAddress)
 				if err != nil {
-					pingStr = "Error"
+					pingStr = "N/A"
 				} else {
 					pingValue := ping.Milliseconds()
 					if pingValue > 0 {
@@ -130,7 +101,7 @@ var locationsCmd = &cobra.Command{
 			}
 			return finalResults[i].ID < finalResults[j].ID
 		})
-
+		
 		table.Append([]string{})
 
 		for _, res := range finalResults {

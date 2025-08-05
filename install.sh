@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e
 
 GITHUB_ORG="aes128-dev"
@@ -14,24 +13,55 @@ main() {
         exit 1
     fi
     
+    check_dependencies
+    
     if [ -f "$INSTALL_PATH" ]; then
-        echo "--> Existing aes128-cli installation found. Attempting to update..."
+        echo "--> Existing aes128-cli installation found. Updating..."
         update_app
     else
-        echo "--> No existing aes128-cli installation found. Starting new installation..."
+        echo "--> No existing installation found. Starting new installation..."
         install_app
     fi
 }
 
-install_app() {
-    check_dependencies
+check_dependencies() {
+    echo "--> Checking for required tools..."
+    local missing_tools=0
+    
+    if ! command -v curl >/dev/null 2>&1; then
+        echo "Error: 'curl' is not installed." >&2
+        missing_tools=1
+    fi
+    if ! command -v tar >/dev/null 2>&1; then
+        echo "Error: 'tar' is not installed." >&2
+        missing_tools=1
+    fi
     
     OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-    ARCH=$(uname -m)
+    if [ "$OS" = "linux" ] && ! command -v setcap >/dev/null 2>&1; then
+        echo "Error: 'setcap' is not installed." >&2
+        missing_tools=1
+    fi
     
+    if [ "$missing_tools" -eq 1 ]; then
+        echo ""
+        echo "Please install the missing tools and run this script again."
+        if [ -f /etc/debian_version ]; then
+            echo "On Debian/Ubuntu, run: sudo apt update && sudo apt install curl libcap2-bin"
+        elif [ -f /etc/redhat-release ]; then
+            echo "On Fedora/CentOS, run: sudo dnf install curl libcap"
+        elif [ -f /etc/arch-release ]; then
+            echo "On Arch Linux, run: sudo pacman -S curl libcap"
+        fi
+        exit 1
+    fi
+}
+
+install_app() {
+    ARCH=$(uname -m)
     echo "--> Detected OS: $OS"
     echo "--> Detected Arch: $ARCH"
-
+    
     case $ARCH in
         x86_64) ARCH="amd64" ;;
         aarch64) ARCH="arm64" ;;
@@ -54,40 +84,16 @@ install_app() {
 }
 
 update_app() {
-    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
     ARCH=$(uname -m)
-    
-    case $ARCH in
-        x86_64) ARCH="amd64" ;;
-        aarch64) ARCH="arm64" ;;
-        armv7l) ARCH="armv7" ;;
-        i386 | i686) ARCH="386" ;;
-    esac
-    
     install_binaries "$OS" "$ARCH"
 
-    # Перезапускаем сервис, если он был активен
-    if systemctl is-active --quiet aes128-cli; then
+    if [ "$OS" = "linux" ] && systemctl is-active --quiet aes128-cli; then
         echo "--> Restarting aes128-cli service..."
         systemctl restart aes128-cli
     fi
 
     echo ""
     echo "--> aes128-cli has been successfully updated!"
-}
-
-check_dependencies() {
-    echo "--> Checking for required tools..."
-    if ! command -v curl >/dev/null 2>&1; then
-        echo "Error: 'curl' is not installed. Please install it first." >&2
-        echo "On Debian/Ubuntu: sudo apt install curl" >&2
-        echo "On Fedora/CentOS: sudo dnf install curl" >&2
-        exit 1
-    fi
-    if ! command -v tar >/dev/null 2>&1; then
-        echo "Error: 'tar' is not installed. Please install it first." >&2
-        exit 1
-    fi
 }
 
 install_binaries() {
@@ -102,10 +108,15 @@ install_binaries() {
     echo "--> Downloading latest aes128-cli..."
     curl -sSL "$CLI_URL" -o "$INSTALL_PATH"
     chmod +x "$INSTALL_PATH"
+    
+    if [ "$OS" = "linux" ]; then
+        echo "--> Setting capabilities for ping..."
+        setcap cap_net_raw+ep "$INSTALL_PATH"
+    fi
 
     mkdir -p "$CORE_INSTALL_DIR"
     
-    echo "--> Downloading latest sing-box core..."
+    echo "--> Downloading sing-box core..."
     curl -sSL "$SINGBOX_URL" | tar -xz -C "$CORE_INSTALL_DIR"
     
     find "$CORE_INSTALL_DIR" -name "sing-box" -type f -exec mv {} "$CORE_INSTALL_DIR/core" \;
@@ -116,7 +127,6 @@ install_binaries() {
 
 setup_service() {
     local OS="$1"
-    
     echo "--> Setting up system service..."
     
     SUDO_USER=${SUDO_USER:-$(who am i | awk '{print $1}')}
@@ -132,7 +142,6 @@ setup_service() {
 Description=AES128 CLI VPN Service
 After=network-online.target
 Wants=network-online.target
-
 [Service]
 Type=simple
 User=$SUDO_USER
@@ -140,32 +149,11 @@ ExecStart=/usr/local/bin/aes128-cli connect
 ExecStop=/usr/local/bin/aes128-cli disconnect
 Restart=on-failure
 RestartSec=5
-
 [Install]
 WantedBy=multi-user.target
 EOF
         systemctl daemon-reload
         echo "--> To enable the service to start on boot, run: sudo systemctl enable aes128-cli"
-        
-    elif [ "$OS" = "freebsd" ]; then
-        echo "--> Creating rc.d service file..."
-        cat > /usr/local/etc/rc.d/aes128-cli <<EOF
-#!/bin/sh
-#
-# PROVIDE: aes128-cli
-# REQUIRE: LOGIN
-# KEYWORD: shutdown
-. /etc/rc.subr
-name="aes128-cli"
-rcvar="aes128_cli_enable"
-command="/usr/local/bin/aes128-cli"
-start_cmd="\${command} connect"
-stop_cmd="\${command} disconnect"
-load_rc_config \$name
-run_rc_command "\$1"
-EOF
-        chmod +x /usr/local/etc/rc.d/aes128-cli
-        echo "--> To enable the service to start on boot, add aes128_cli_enable=\"YES\" to /etc/rc.conf"
     fi
 }
 
