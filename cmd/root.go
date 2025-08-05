@@ -19,3 +19,34 @@ func Execute() {
 		os.Exit(1)
 	}
 }
+
+func init() {
+	cobra.EnableCommandSorting = false
+
+	rootCmd.AddGroup(&cobra.Group{
+		ID:    "core",
+		Title: "Core Commands:",
+	})
+	rootCmd.AddGroup(&cobra.Group{
+		ID:    "management",
+		Title: "Management Commands:",
+	})
+
+	rootCmd.AddCommand(connectCmd)
+	rootCmd.AddCommand(disconnectCmd)
+	rootCmd.AddCommand(statusCmd)
+
+	rootCmd.AddCommand(loginCmd)
+	rootCmd.AddCommand(logoutCmd)
+	rootCmd.AddCommand(locationsCmd)
+	rootCmd.AddCommand(settingsCmd)
+
+	connectCmd.GroupID = "core"
+	disconnectCmd.GroupID = "core"
+	statusCmd.GroupID = "core"
+
+	loginCmd.GroupID = "management"
+	logoutCmd.GroupID = "management"
+	locationsCmd.GroupID = "management"
+	settingsCmd.GroupID = "management"
+}
