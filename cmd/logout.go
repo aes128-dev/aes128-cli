@@ -15,7 +15,6 @@ var logoutCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if os.Geteuid() == 0 {
 			fmt.Println("Error: do not run the 'logout' command with sudo.")
-			fmt.Println("Logout command works with your user files and does not require root privileges.")
 			return
 		}
 
@@ -28,9 +27,10 @@ var logoutCmd = &cobra.Command{
 		pidPath, err := config.GetConfigFilePath(config.PIDFileName)
 		if err == nil {
 			if _, err := os.Stat(pidPath); err == nil {
-				fmt.Println("Warning: An active VPN connection was found.")
-				fmt.Println("Please run 'sudo aes128-cli disconnect' first to terminate it properly.")
-				fmt.Println("Proceeding with logout from the server...")
+				fmt.Println("Error: An active VPN connection was found.")
+				fmt.Println("You must disconnect from the VPN before logging out.")
+				fmt.Println("Please run 'sudo aes128-cli disconnect' first.")
+				return
 			}
 		}
 
