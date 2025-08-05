@@ -111,7 +111,7 @@ $ aes128-cli logout
 
 1.  Clone the repository:
     ```bash
-    git clone [https://github.com/aes128-dev/aes128-cli.git](https://github.com/aes128-dev/aes128-cli.git)
+    git clone https://github.com/aes128-dev/aes128-cli.git
     cd aes128-cli
     ```
 
@@ -147,7 +147,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Для установки требуется `curl` и `tar`. Выполните следующую команду в терминале:
 
 ```bash
-curl -sSL [https://raw.githubusercontent.com/aes128-dev/aes128-cli/main/install.sh](https://raw.githubusercontent.com/aes128-dev/aes128-cli/main/install.sh) | sudo bash
+curl -sSL https://raw.githubusercontent.com/aes128-dev/aes128-cli/main/install.sh | sudo bash
 ```
 
 Скрипт автоматически установит `aes128-cli` и необходимое ядро `sing-box` в систему.
