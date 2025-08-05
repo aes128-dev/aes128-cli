@@ -6,7 +6,6 @@ import (
 
 	"github.com/aes128-dev/aes128-cli/pkg/api"
 	"github.com/aes128-dev/aes128-cli/pkg/config"
-	"github.com/aes128-dev/aes128-cli/pkg/vpn"
 	"github.com/spf13/cobra"
 )
 
@@ -27,16 +26,11 @@ var logoutCmd = &cobra.Command{
 		}
 
 		pidPath, err := config.GetConfigFilePath(config.PIDFileName)
-		if err != nil {
-			fmt.Println("Warning: could not get PID file path.")
-		}
-
-		if _, err := os.Stat(pidPath); err == nil {
-			fmt.Println("Active VPN connection found. Disconnecting first...")
-			if err := vpn.Stop(); err != nil {
-				fmt.Printf("Could not disconnect cleanly, but proceeding with logout. Error: %v\n", err)
-			} else {
-				fmt.Println("Disconnected successfully.")
+		if err == nil {
+			if _, err := os.Stat(pidPath); err == nil {
+				fmt.Println("Warning: An active VPN connection was found.")
+				fmt.Println("Please run 'sudo aes128-cli disconnect' first to terminate it properly.")
+				fmt.Println("Proceeding with logout from the server...")
 			}
 		}
 

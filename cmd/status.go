@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/aes128-dev/aes128-cli/pkg/config"
@@ -13,6 +14,11 @@ var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show current connection status",
 	Run: func(cmd *cobra.Command, args []string) {
+		if os.Geteuid() != 0 {
+			fmt.Println("This command requires root privileges to check the service status. Please run with sudo.")
+			return
+		}
+
 		status, err := config.ReadConnectionStatus()
 		if err != nil {
 			fmt.Println("Status: Disconnected")
@@ -21,7 +27,7 @@ var statusCmd = &cobra.Command{
 
 		duration, err := vpn.GetConnectionDuration()
 		if err != nil {
-			fmt.Println("Status: Disconnected (process not found)")
+			fmt.Println("Status: Disconnected (VPN process not found or has been terminated)")
 			config.DeleteConnectionStatus()
 			return
 		}
