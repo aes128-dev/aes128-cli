@@ -129,16 +129,22 @@ install_binaries() {
     
     echo "--> Downloading sing-box core..."
     TEMP_ARCHIVE=$(mktemp)
-    curl -fSL "$SINGBOX_URL" -o "$TEMP_ARCHIVE"
+    
+    if ! curl -fSL "$SINGBOX_URL" -o "$TEMP_ARCHIVE"; then
+        echo "Error: Failed to download sing-box core from $SINGBOX_URL" >&2
+        rm -f "$TEMP_ARCHIVE"
+        exit 1
+    fi
     
     if ! file "$TEMP_ARCHIVE" | grep -q 'gzip compressed data'; then
         echo "Error: Downloaded file for sing-box is not a valid gzip archive." >&2
         echo "Please check the URL or your network connection." >&2
+        rm -f "$TEMP_ARCHIVE"
         exit 1
     fi
     
     tar -xzf "$TEMP_ARCHIVE" -C "$CORE_INSTALL_DIR"
-    rm "$TEMP_ARCHIVE"
+    rm -f "$TEMP_ARCHIVE"
 
     find "$CORE_INSTALL_DIR" -name "sing-box" -type f -exec mv {} "$CORE_INSTALL_DIR/core" \;
     chmod +x "$CORE_INSTALL_DIR/core"
